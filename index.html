@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>god file</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.6.0/Chart.bundle.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/4.1.2/firebase.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.4/angular.min.js"></script>
+</head>
+
+<body>
+    <div style="width: 600px;">
+        <canvas id="lineChart1" height="400" width="400"></canvas>
+    </div>
+    <div style="width: 600px;">
+        <canvas id="lineChart2" width="400" height="400"></canvas>
+    </div>
+    <div style="width: 600px;">
+        <canvas id="lineChart3" width="400" height="400"></canvas>
+    </div>
+    <div style="width: 600px;">
+        <canvas id="barChart1" width="400" height="400"></canvas>
+    </div>
+    <div style="width: 600px;">
+        <canvas id="barChart2" width="400" height="400"></canvas>
+    </div>
+    <div style="width: 600px;">
+        <canvas id="barChart3" width="400" height="400"></canvas>
+    </div>
+    <script>
+    // Initialize Firebase
+    var config = {
+        apiKey: "AIzaSyChXJw-G6ociQjoVXCdUaXSXGsXqzfhe_Q",
+        authDomain: "pptvr-demo-38cb9.firebaseapp.com",
+        databaseURL: "https://pptvr-demo-38cb9.firebaseio.com",
+        projectId: "pptvr-demo-38cb9",
+        storageBucket: "pptvr-demo-38cb9.appspot.com",
+        messagingSenderId: "60482737108"
+    };
+    firebase.initializeApp(config);
+    var dbRef = firebase.database().ref('analytics');
+    dbRef.on('value', function(snap) {
+
+        function prepareDataChart1(snap, xAxisVals, yAxisVals) {
+
+            var dataPoints = [];
+
+            for (var key in snap.val()) {
+                if (snap.val().hasOwnProperty(key)) {
+
+                    var datapoint = {
+                        "projectId": key,
+                        "sessionCount": parseInt(Object.keys(snap.val()[key]).length)
+                    };
+
+
+                    dataPoints.push(datapoint);
+
+                }
+            }
+
+
+            dataPoints = dataPoints.sort(function(a, b) {
+                return a.sessionCount - b.sessionCount
+            });
+
+
+            dataPoints.forEach(function(dp) {
+                xAxisVals.push(dp.projectId);
+                yAxisVals.push(dp.sessionCount);
+            })
+
+        }
+
+
+
+        function prepareDataChart2(snap, xAxisVals, yAxisVals) {
+
+            var dataPoints = [];
+
+            var uidviews = {};
+
+            for (var projectid in snap.val()) {
+                if (snap.val().hasOwnProperty(projectid)) {
+
+                    var projectData = snap.val()[projectid];
+                    for (var sessionId in projectData) {
+                        if (projectData.hasOwnProperty(sessionId)) {
+
+
+                            var dataPoint = projectData[sessionId];
+
+                            var uid = dataPoint.uid;
+
+                            if (uidviews[uid] == undefined) {
+                                uidviews[uid] = 1;
+                            } else {
+                                uidviews[uid] = uidviews[uid] + 1;
+                            }
+
+                        }
+                    }
+
+                }
+            }
+
+            for (var key in uidviews) {
+                if (uidviews.hasOwnProperty(key)) {
+
+                    dataPoints.push({
+                        "uid": key,
+                        "views": uidviews[key]
+                    });
+                }
+            }
+
+
+            dataPoints = dataPoints.sort(function(a, b) {
+                return a.views - b.views
+            });
+
+
+            dataPoints.forEach(function(dp) {
+                xAxisVals.push(dp.uid);
+                yAxisVals.push(dp.views);
+            })
+        }
+
+        function prepareDataChart3(snap, xAxisVals, yAxisVals) {
+
+            var dataPoints = [];
+
+            var sceneviews = {};
+
+            var sceneViewInfoKeys = ['country', 'entrytime', 'gps', 'state', 'uid'];
+
+            for (var projectid in snap.val()) {
+                if (snap.val().hasOwnProperty(projectid)) {
+
+                    var projectData = snap.val()[projectid];
+                    for (sessionId in projectData) {
+                        if (projectData.hasOwnProperty(sessionId)) {
+
+                            var session = projectData[sessionId];
+                            // console.log("session", session);
+
+                            for (sceneid in session) {
+                                if (session.hasOwnProperty(sceneid)) {
+
+                                    if (sceneViewInfoKeys.indexOf(sceneid) < 0) {
+                                        // console.log("sceneid", sceneid);
+
+                                        if (sceneviews[sceneid] == undefined) {
+                                            sceneviews[sceneid] = 1;
+                                        } else {
+                                            sceneviews[sceneid] = sceneviews[sceneid] + 1;
+                                        }
+                                    }
+
+
+                                }
+                            }
+
+                        }
+                    }
+
+                }
+            }
+
+            for (var key in sceneviews) {
+                if (sceneviews.hasOwnProperty(key)) {
+
+                    dataPoints.push({
+                        "sceneid": key,
+                        "views": sceneviews[key]
+                    });
+                }
+            }
+
+            dataPoints = dataPoints.sort(function(a, b) {
+                return a.views - b.views
+            });
+
+            dataPoints.forEach(function(dp) {
+                xAxisVals.push(dp.sceneid);
+                yAxisVals.push(dp.views);
+            })
+        }
+
+        function prepareDataChart4(snap, xAxisVals, yAxisVals) {
+
+            var dataPoints = [];
+
+            var stateviews = {};
+
+            for (var projectid in snap.val()) {
+                if (snap.val().hasOwnProperty(projectid)) {
+
+                    var projectData = snap.val()[projectid];
+                    for (var sessionId in projectData) {
+                        if (projectData.hasOwnProperty(sessionId)) {
+
+                            var dataPoint = projectData[sessionId];
+
+                            var state = dataPoint.state;
+
+                            if (stateviews[state] == undefined) {
+                                stateviews[state] = 1;
+                            } else {
+                                stateviews[state] = stateviews[state] + 1;
+                            }
+
+                        }
+                    }
+
+                }
+            }
+
+            for (var key in stateviews) {
+                if (stateviews.hasOwnProperty(key)) {
+
+                    dataPoints.push({
+                        "state": key,
+                        "views": stateviews[key]
+                    });
+                }
+            }
+
+            dataPoints = dataPoints.sort(function(a, b) {
+                return a.views - b.views
+            });
+
+            dataPoints.forEach(function(dp) {
+                xAxisVals.push(dp.state);
+                yAxisVals.push(dp.views);
+            })
+        }
+
+        function prepareDataChart5(snap, xAxisVals, yAxisVals) {
+
+            var dataPoints = [];
+
+            var countryviews = {};
+
+            for (var projectid in snap.val()) {
+                if (snap.val().hasOwnProperty(projectid)) {
+
+                    var projectData = snap.val()[projectid];
+                    for (var sessionId in projectData) {
+                        if (projectData.hasOwnProperty(sessionId)) {
+
+                            var dataPoint = projectData[sessionId];
+
+                            var country = dataPoint.country;
+
+                            if (countryviews[country] == undefined) {
+                                countryviews[country] = 1;
+                            } else {
+                                countryviews[country] = countryviews[country] + 1;
+                            }
+
+                        }
+                    }
+
+                }
+            }
+
+            for (var key in countryviews) {
+                if (countryviews.hasOwnProperty(key)) {
+
+                    dataPoints.push({
+                        "country": key,
+                        "views": countryviews[key]
+                    });
+                }
+            }
+
+            dataPoints = dataPoints.sort(function(a, b) {
+                return a.views - b.views
+            });
+
+            dataPoints.forEach(function(dp) {
+                xAxisVals.push(dp.country);
+                yAxisVals.push(dp.views);
+            })
+        }
+
+        function prepareDataChart6(snap, xAxisVals, yAxisVals) {
+
+            var dataPoints = [];
+
+            var gpsviews = {};
+
+            for (var projectid in snap.val()) {
+                if (snap.val().hasOwnProperty(projectid)) {
+
+                    var projectData = snap.val()[projectid];
+                    for (var sessionId in projectData) {
+                        if (projectData.hasOwnProperty(sessionId)) {
+
+                            var dataPoint = projectData[sessionId];
+
+                            var gps = dataPoint.gps;
+
+                            if (gpsviews[gps] == undefined) {
+                                gpsviews[gps] = 1;
+                            } else {
+                                gpsviews[gps] = gpsviews[gps] + 1;
+                            }
+
+                        }
+                    }
+
+                }
+            }
+
+            for (var key in gpsviews) {
+                if (gpsviews.hasOwnProperty(key)) {
+
+                    dataPoints.push({
+                        "gps": key,
+                        "views": gpsviews[key]
+                    });
+                }
+            }
+
+            dataPoints = dataPoints.sort(function(a, b) {
+                return a.views - b.views
+            });
+
+            dataPoints.forEach(function(dp) {
+                xAxisVals.push(dp.gps);
+                yAxisVals.push(dp.views);
+            })
+        }
+
+        var functionID = [prepareDataChart1, prepareDataChart2, prepareDataChart3, prepareDataChart4, prepareDataChart5, prepareDataChart6]
+
+        function drawChart(xArr, yArr, title, chartid) {
+            // global functionID;
+                         
+                 var ctx = document.getElementById(chartid);
+                 var lineChart = new Chart (ctx, {
+
+                        type: 'line',
+                        data: {
+                            labels: xArr,
+                            datasets: [{
+
+                                fill: false,
+                                lineTension: 0,
+                                backgroundColor: "rgba(255, 255, 255, 1)",
+                                borderColor: "rgba(5, 91, 10, 1)",
+                                borderCapStyle: 'butt',
+                                borderDash: [],
+                                borderDashOffset: 0.0,
+                                borderJoinStyle: 'miter',
+                                pointBorderColor: "rgba(5, 91, 10, 1)",
+                                pointBackgroundColor: "rgba(255, 255, 255, 1)",
+                                pointBorderWidth: 1,
+                                pointHoverRadius: 5,
+                                pointHoverBackgroundColor: "rgba(255, 255, 255, 1)",
+                                pointHoverBorderColor: "rgba(5, 91, 10, 1)",
+                                pointHoverBorderWidth: 2,
+                                pointRadius: 1,
+                                pointHitRadius: 10,
+                                data: yArr,
+                            }]
+                        },
+                        options: {
+                            legend: {
+                                display: false
+                            },
+                            title: {
+                                display: true,
+                                text: title
+                            },
+                            scales: {
+                                xAxes: [{
+                                    display: false
+                                }],
+                                yAxes: [{
+                                    type: "linear",
+
+                                    ticks: {
+                                        beginAtZero: true
+                                    }
+                                }]
+
+                            }
+                        }
+                    });
+             }  
+             function drawChart1(xArr, yArr, title, chartid) {
+
+    var ctx = document.getElementById(chartid);
+                 var barChart = new Chart (ctx, {
+
+                                        type: 'bar',
+                        data: {
+                            labels: xArr,
+                            datasets: [{
+                                borderColor: "rgba(10,23,157,1)",
+                                backgroundColor: "rgba(10,23,157,1)",
+                                borderWidth: 1,
+                                data: yArr,
+                            }]
+                        },
+                        options: {
+                            legend: {
+                                display: false
+                            },
+                            title: {
+                                display: true,
+                                text: title
+                            },
+                            scales: {
+                                xAxes: [{
+                                    display: false
+                                }],
+                                yAxes: [{
+                                    type: "logarithmic",
+                                    ticks: {
+                                        beginAtZero: true
+                                    }
+                                }]
+
+                            }
+                        }
+                    })
+				}
+        // First chart
+        var xAxisVals1 = [];
+        var yAxisVals1 = [];
+
+        prepareDataChart1(snap, xAxisVals1, yAxisVals1)
+        drawChart(xAxisVals1, yAxisVals1, "ProjectID vs Views", "lineChart1", "lineChart");
+
+        // Second chart
+        var xAxisVals2 = [];
+        var yAxisVals2 = [];
+
+        prepareDataChart2(snap, xAxisVals2, yAxisVals2)
+        drawChart(xAxisVals2, yAxisVals2, "UID vs Views", "lineChart2", "lineChart");
+
+        // Third chart
+        var xAxisVals3 = [];
+        var yAxisVals3 = [];
+
+        prepareDataChart3(snap, xAxisVals3, yAxisVals3)
+        drawChart(xAxisVals3, yAxisVals3, "Scene vs Views", "lineChart3", "lineChart");
+
+        // Fourth chart
+        var xAxisVals4 = [];
+        var yAxisVals4 = [];
+
+        prepareDataChart4(snap, xAxisVals4, yAxisVals4)
+        drawChart1(xAxisVals4, yAxisVals4, "State vs Views", "barChart1", "barChart");
+
+        // Fifth chart
+        var xAxisVals5 = [];
+        var yAxisVals5 = [];
+
+        prepareDataChart5(snap, xAxisVals5, yAxisVals5)
+        drawChart1(xAxisVals5, yAxisVals5, "Country vs Views", "barChart2", "barChart");
+
+        // Sixth chart
+        var xAxisVals6 = [];
+        var yAxisVals6 = [];
+
+        prepareDataChart6(snap, xAxisVals6, yAxisVals6)
+        drawChart1(xAxisVals6, yAxisVals6, "GPS vs Views", "barChart3", "barChart");
+
+    });
+    </script>
+</body>
+
+</html>
